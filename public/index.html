@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Ascent: Orbital Arena Brawl</title>
+  <style>
+    :root {
+      --bg-space: #000000;
+      --card-glass: rgba(24, 24, 28, 0.86);
+      --card-border: rgba(255, 255, 255, 0.10);
+      --text-primary: #FFFFFF;
+      --text-secondary: rgba(235, 235, 245, 0.60);
+      --text-tertiary: rgba(235, 235, 245, 0.38);
+      
+      /* Apple iOS System Palette */
+      --sys-blue: #0A84FF;
+      --sys-cyan: #64D2FF;
+      --sys-orange: #FF9F0A;
+      --sys-red: #FF453A;
+      --sys-green: #30D158;
+      --sys-gold: #FFD60A;
+      --sys-silver: #E5E5EA;
+      --sys-bronze: #E0A96D;
+      --sys-purple: #BF5AF2;
+      --sys-gray: #8E8E93;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 1080 x 1920 Native Vertical Canvas */
+    #app-container {
+      width: 1080px;
+      height: 1920px;
+      background: var(--bg-space);
+      position: relative;
+      overflow: hidden;
+      transform-origin: center center;
+      box-shadow: 0 0 140px rgba(0, 0, 0, 0.98);
+    }
+
+    /* Live Activity Hub Header */
+    .unified-header {
+      position: absolute;
+      top: 40px;
+      left: 36px;
+      right: 36px;
+      z-index: 50;
+      background: var(--card-glass);
+      backdrop-filter: blur(50px) saturate(210%);
+      -webkit-backdrop-filter: blur(50px) saturate(210%);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 18px 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Row 1: Brand + Live Data + Micro Controls */
+    .header-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .meta-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .phase-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--sys-gold);
+      background: rgba(255, 214, 10, 0.12);
+      border: 1px solid rgba(255, 214, 10, 0.28);
+      padding: 3px 10px;
+      border-radius: 999px;
+      transition: all 0.3s;
+    }
+
+    .phase-pill.raid-mode {
+      color: var(--sys-red);
+      background: rgba(255, 69, 58, 0.16);
+      border-color: rgba(255, 69, 58, 0.45);
+      animation: pulseUrgent 0.9s infinite alternate ease-in-out;
+    }
+
+    .phase-pill.raid-mode .phase-dot {
+      background: var(--sys-red);
+    }
+
+    .phase-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--sys-gold);
+      border-radius: 50%;
+      animation: pulseDot 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.75); }
+    }
+
+    .header-quick-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .header-quick-stats strong {
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .micro-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .micro-btn:hover {
+      color: #FFF;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .micro-btn.active {
+      color: var(--sys-green);
+      background: rgba(48, 209, 88, 0.14);
+      border-color: rgba(48, 209, 88, 0.35);
+    }
+
+    /* Row 2: Top 5 Leaderboard Podium */
+    .leader-podium {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .leader-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .leader-pill.rank-1 {
+      background: rgba(255, 214, 10, 0.14);
+      border-color: rgba(255, 214, 10, 0.4);
+      box-shadow: 0 4px 16px rgba(255, 214, 10, 0.12);
+    }
+
+    .leader-pill.rank-2 {
+      background: rgba(229, 229, 234, 0.10);
+      border-color: rgba(229, 229, 234, 0.25);
+    }
+
+    .leader-pill.rank-3 {
+      background: rgba(224, 169, 109, 0.10);
+      border-color: rgba(224, 169, 109, 0.25);
+    }
+
+    .pill-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      overflow: hidden;
+    }
+
+    .pill-rank {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+      width: 16px;
+    }
+
+    .leader-pill.rank-1 .pill-rank { color: var(--sys-gold); }
+    .leader-pill.rank-2 .pill-rank { color: var(--sys-silver); }
+    .leader-pill.rank-3 .pill-rank { color: var(--sys-bronze); }
+
+    .pill-flag {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .pill-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill-points {
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.90);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .leader-pill.rank-1 .pill-points { color: var(--sys-gold); }
+    .leader-pill.rank-2 .pill-points { color: var(--sys-silver); }
+    .leader-pill.rank-3 .pill-points { color: var(--sys-bronze); }
+
+    /* Row 3: Leader Information + Gap Capsule */
+    .throne-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .throne-status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .throne-title {
+      color: var(--sys-gold);
+      letter-spacing: 0.5px;
+    }
+
+    .throne-occupant {
+      color: #FFFFFF;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gap-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--sys-gold);
+      background: rgba(255, 214, 10, 0.12);
+      border: 1px solid rgba(255, 214, 10, 0.32);
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      transition: all 0.3s;
+    }
+
+    .gap-pill.urgent {
+      color: var(--sys-red);
+      background: rgba(255, 69, 58, 0.16);
+      border-color: rgba(255, 69, 58, 0.45);
+      animation: pulseUrgent 0.9s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseUrgent {
+      from { transform: scale(1); box-shadow: 0 0 0 rgba(255, 69, 58, 0); }
+      to { transform: scale(1.04); box-shadow: 0 0 12px rgba(255, 69, 58, 0.4); }
+    }
+
+    /* Live Chat Stream */
+    .live-chat-stream {
+      position: absolute;
+      bottom: 104px;
+      left: 36px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .chat-bubble {
+      background: rgba(24, 24, 28, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      animation: chatFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes chatFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .chat-author {
+      font-weight: 700;
+      color: var(--sys-cyan);
+    }
+
+    .chat-text {
+      color: rgba(255, 255, 255, 0.9);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Bottom Broadcast Ticker (Apple HIG Capsule) */
+    .broadcast-ticker {
+      position: absolute;
+      bottom: 34px;
+      left: 36px;
+      right: 36px;
+      height: 52px;
+      background: rgba(24, 24, 28, 0.88);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .ticker-tag {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-size: 11px;
+    }
+
+    .ticker-item b {
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .ticker-item.climb b { color: var(--sys-cyan); }
+    .ticker-item.stomp b { color: var(--sys-gold); }
+    .ticker-item.shield b { color: var(--sys-green); }
+    .ticker-item.rocket b { color: var(--sys-purple); }
+
+    .ticker-separator {
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Dynamic Island Toast */
+    .dynamic-toast {
+      position: absolute;
+      top: 172px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 10px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 75;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+      white-space: nowrap;
+    }
+
+    .dynamic-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #arena-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Live Activity Hub -->
+    <header class="unified-header">
+      <!-- Top 5 Leaderboard Podium -->
+      <div class="leader-podium" id="leader-podium"></div>
+
+      <!-- Row 3: Leader Information + Gap Capsule -->
+      <div class="throne-meta-row">
+        <div class="throne-status-left">
+          <span class="throne-title">CHAMPION:</span>
+          <span class="throne-occupant" id="throne-occupant-badge">TAIWAN · 66,080 PTS</span>
+        </div>
+        <div id="gap-alert-container">
+          <span id="gap-alert-badge" class="gap-pill">GAP Δ1,450 PTS</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dynamic Island Toast -->
+    <div class="dynamic-toast" id="dynamic-toast">
+      <span id="toast-icon">⚡</span>
+      <span id="toast-message">BRAWL ARENA ONLINE</span>
+    </div>
+
+    <!-- Arena Canvas -->
+    <canvas id="arena-canvas" width="1080" height="1920"></canvas>
+
+    <!-- Live Chat Stream -->
+    <div class="live-chat-stream" id="live-chat-stream"></div>
+
+    <!-- Bottom Broadcast Ticker (Apple HIG Capsule) -->
+    <footer class="broadcast-ticker">
+      <div class="ticker-item climb">
+        <span class="ticker-tag">BOOST</span>
+        <span>#team <b>(+10 PTS)</b></span>
+      </div>
+      <span class="ticker-separator">·</span>
+      <div class="ticker-item stomp">
+        <span class="ticker-tag">ATTACK</span>
+        <span>#team attack #rival <b>(-500 PTS)</b></span>
+      </div>
+      <span class="ticker-separator">·</span>
+      <div class="ticker-item shield">
+        <span class="ticker-tag">SHIELD</span>
+        <span>$2 Deflect <b>(15s)</b></span>
+      </div>
+      <span class="ticker-separator">·</span>
+      <div class="ticker-item rocket">
+        <span class="ticker-tag">NUKE</span>
+        <span>$10 Shockwave <b>(+10,000 PTS)</b></span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('arena-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Apple iOS System Palette Constants
+    const C = {
+      blue: '#0A84FF',
+      cyan: '#64D2FF',
+      orange: '#FF9F0A',
+      red: '#FF453A',
+      green: '#30D158',
+      gold: '#FFD60A',
+      silver: '#E5E5EA',
+      bronze: '#E0A96D',
+      purple: '#BF5AF2',
+      gray: '#8E8E93',
+      darkGlass: 'rgba(20, 20, 24, 0.88)',
+      white: '#FFFFFF',
+      whiteTrans: 'rgba(255, 255, 255, 0.45)'
+    };
+
+    // 1. Native Web Audio API Sound Synthesizer
+    let audioCtx = null;
+    let isAudioEnabled = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      isAudioEnabled = true;
+      const icon = document.getElementById('audio-icon');
+      const text = document.getElementById('audio-text');
+      const btn = document.getElementById('audio-toggle-btn');
+      if (icon) icon.innerText = '🔊';
+      if (text) text.innerText = 'AUDIO ON';
+      if (btn) btn.classList.add('active');
+    }
+
+    function toggleAudio() {
+      if (!isAudioEnabled) initAudio();
+    }
+
+    const SoundEngine = {
+      playBounce: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      },
+
+      playDash: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(740, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      },
+
+      playImpact: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(36, audioCtx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      },
+
+      playCheer: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+      },
+
+      playShieldChord: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.04);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime + idx * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.04 + 0.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + idx * 0.04);
+          osc.stop(audioCtx.currentTime + idx * 0.04 + 0.4);
+        });
+      },
+
+      playNukeSurge: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(980, audioCtx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      },
+
+      playBossAlert: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(55, audioCtx.currentTime + 0.8);
+        gain.gain.setValueAtTime(0.22, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+      },
+
+      playBossHit: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(360, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      },
+
+      playBossCollapse: function() {
+        if (!isAudioEnabled || !audioCtx) return;
+        [60, 120, 240, 480].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.05);
+          osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + idx * 0.05 + 0.7);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.05 + 0.7);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + idx * 0.05);
+          osc.stop(audioCtx.currentTime + idx * 0.05 + 0.7);
+        });
+      }
+    };
+
+    window.addEventListener('click', () => {
+      if (!isAudioEnabled) initAudio();
+    }, { once: true });
+
+    // 2. Perimeter & Particle Effects Engine
+    const ARENA_BOUNDS = {
+      minX: 74,
+      maxX: 1006,
+      minY: 220,
+      maxY: 1820
+    };
+
+    let screenShake = { x: 0, y: 0, intensity: 0 };
+    function triggerShake(amt = 10) {
+      screenShake.intensity = Math.min(22, screenShake.intensity + amt);
+    }
+
+    let particles = [];
+    function spawnSparks(x, y, color, count = 12, speed = 5) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const vel = Math.random() * speed + 1.2;
+        particles.push({
+          x: x, y: y,
+          vx: Math.cos(angle) * vel,
+          vy: Math.sin(angle) * vel,
+          color: color,
+          alpha: 1.0,
+          decay: Math.random() * 0.04 + 0.02,
+          radius: Math.random() * 3 + 1.5
+        });
+      }
+    }
+
+    let floatingTexts = [];
+    function spawnFloatingText(x, y, text, color, isBig = false) {
+      floatingTexts.push({
+        x: x,
+        y: y,
+        text: text,
+        color: color,
+        alpha: 1.0,
+        vy: isBig ? -2.0 : -1.4,
+        scale: isBig ? 1.3 : 1.0,
+        isBig: isBig
+      });
+    }
+
+    let attackLasers = [];
+
+    // Deep Space Star Dust Drift
+    let starDust = [];
+    for (let i = 0; i < 32; i++) {
+      starDust.push({
+        x: Math.random() * 1080,
+        y: Math.random() * 1920,
+        radius: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.35 + 0.1,
+        vy: Math.random() * 0.35 + 0.1
+      });
+    }
+
+    // Live Chat Stream Handler
+    function addChatStreamItem(author, text) {
+      const container = document.getElementById('live-chat-stream');
+      if (!container) return;
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.innerHTML = `
+        <span class="chat-author">@${author}</span>
+        <span class="chat-text">${text}</span>
+      `;
+      container.appendChild(bubble);
+
+      if (container.children.length > 3) {
+        container.removeChild(container.firstChild);
+      }
+      setTimeout(() => {
+        if (bubble.parentNode) {
+          bubble.style.transition = 'opacity 0.5s, transform 0.5s';
+          bubble.style.opacity = '0';
+          bubble.style.transform = 'translateY(-10px)';
+          setTimeout(() => bubble.remove(), 500);
+        }
+      }, 4000);
+    }
+
+    // Global Countries Database
+    const ALL_COUNTRIES = [
+      { code: "tw", name: "Taiwan" }, { code: "us", name: "USA" },
+      { code: "kr", name: "Korea" }, { code: "jp", name: "Japan" },
+      { code: "tr", name: "Turkey" }, { code: "br", name: "Brazil" },
+      { code: "de", name: "Germany" }, { code: "fr", name: "France" },
+      { code: "gb", name: "UK" }, { code: "ca", name: "Canada" },
+      { code: "ua", name: "Ukraine" }, { code: "it", name: "Italy" },
+      { code: "es", name: "Spain" }, { code: "ar", name: "Argentina" },
+      { code: "in", name: "India" }, { code: "au", name: "Australia" },
+      { code: "mx", name: "Mexico" }, { code: "sa", name: "Saudi" },
+      { code: "za", name: "S.Africa" }, { code: "se", name: "Sweden" },
+      { code: "nl", name: "Holland" }, { code: "sg", name: "Singapore" },
+      { code: "th", name: "Thailand" }, { code: "vn", name: "Vietnam" },
+      { code: "id", name: "Indonesia" }, { code: "ph", name: "Phil." },
+      { code: "my", name: "Malaysia" }, { code: "pl", name: "Poland" },
+      { code: "pt", name: "Portugal" }, { code: "gr", name: "Greece" }
+    ];
+
+    const flagImages = {};
+    ALL_COUNTRIES.forEach(c => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `https://flagcdn.com/w160/${c.code}.png`;
+      flagImages[c.code] = img;
+    });
+
+    let participants = [];
+    let sessionStartTime = Date.now();
+    const STARTER_COUNTRIES = ["tw", "jp", "us", "kr", "tr", "br", "de", "gb"];
+
+    // 3. Battle Disc Entity Deployment
+    function deployCountry(countryObj, initialX = null, initialY = null, initialPoints = null) {
+      const existing = participants.find(p => p.country.code === countryObj.code && p.isAlive);
+      if (existing) return existing;
+
+      const px = (initialX !== null) ? initialX : (200 + Math.random() * 680);
+      const py = (initialY !== null) ? initialY : (400 + Math.random() * 1100);
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.0 + Math.random() * 0.8;
+      const pts = (initialPoints !== null) ? initialPoints : 18000 + Math.floor(Math.random() * 6000);
+
+      const newParticipant = {
+        country: countryObj,
+        points: pts,
+        x: px,
+        y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 46,
+        targetRadius: 46,
+        squashX: 1.0,
+        squashY: 1.0,
+        scaleImpulse: 0,
+        globalRank: participants.length + 1,
+        fanCount: 8 + Math.floor(Math.random() * 12),
+        isAlive: true,
+        shieldUntil: Date.now() + 3500,
+        revengeArmorUntil: 0,
+        lastAttackTime: 0,
+        isDashing: false,
+        dashTarget: null,
+        dashTimer: 0,
+        hitFlashTimer: 0,
+        boostFlashTimer: 0
+      };
+
+      participants.push(newParticipant);
+      updateLeaderboardUI();
+      updateSquadCountUI();
+      return newParticipant;
+    }
+
+    // World Boss Raid System: TITAN R-01 (10-Min Cycle)
+    const BOSS_CONFIG = {
+      maxHp: 50000,
+      rewardPool: 50000,
+      raidWindowSec: 90,
+      cycleIntervalSec: 600 // 10 minutes
+    };
+
+    let boss = {
+      isActive: false,
+      name: "TITAN R-01",
+      maxHp: BOSS_CONFIG.maxHp,
+      currentHp: BOSS_CONFIG.maxHp,
+      rewardPool: BOSS_CONFIG.rewardPool,
+      x: 540,
+      y: 960,
+      vx: 0.35,
+      vy: 0.25,
+      radius: 104,
+      targetRadius: 104,
+      squashX: 1.0,
+      squashY: 1.0,
+      scaleImpulse: 0,
+      timeRemaining: BOSS_CONFIG.raidWindowSec,
+      damageLedger: {},
+      totalDamage: 0,
+      hitFlashTimer: 0,
+      shockwaveCooldown: 12.0,
+      nextSpawnTimer: BOSS_CONFIG.cycleIntervalSec
+    };
+
+    function spawnBoss() {
+      if (boss.isActive) return;
+      boss.isActive = true;
+      boss.currentHp = boss.maxHp;
+      boss.rewardPool = BOSS_CONFIG.rewardPool;
+      boss.timeRemaining = BOSS_CONFIG.raidWindowSec;
+      boss.damageLedger = {};
+      boss.totalDamage = 0;
+      boss.x = 540;
+      boss.y = 960;
+      boss.vx = (Math.random() - 0.5) * 0.7;
+      boss.vy = (Math.random() - 0.5) * 0.7;
+      boss.hitFlashTimer = 0;
+      boss.shockwaveCooldown = 12.0;
+
+      SoundEngine.playBossAlert();
+      triggerShake(16);
+      showToast("🚨 TITAN R-01 HAS ENTERED THE ARENA!", "⚔️");
+      addChatStreamItem("RAID", "🚨 WORLD BOSS SPAWNED: Attack together for 50,000 PTS pool!");
+
+      updatePhaseHeader();
+    }
+
+    function attackBoss(attackerName, damage = 500, isCrit = false) {
+      if (!boss.isActive || boss.currentHp <= 0) return;
+
+      const attacker = participants.find(p => p.isAlive && (
+        p.country.name.toLowerCase() === attackerName.toLowerCase() ||
+        p.country.code === attackerName.toLowerCase()
+      ));
+
+      const actualDamage = Math.min(boss.currentHp, damage);
+      boss.currentHp -= actualDamage;
+      const teamKey = attacker ? attacker.country.name : attackerName;
+      boss.damageLedger[teamKey] = (boss.damageLedger[teamKey] || 0) + actualDamage;
+      boss.totalDamage += actualDamage;
+      boss.hitFlashTimer = 18;
+
+      if (attacker) {
+        attacker.isDashing = true;
+        attacker.dashTarget = boss;
+        attacker.dashTimer = 1.6;
+        attacker.points += 20;
+
+        attackLasers.push({
+          x1: attacker.x, y1: attacker.y,
+          x2: boss.x, y2: boss.y,
+          alpha: 1.0
+        });
+      }
+
+      SoundEngine.playBossHit();
+      spawnSparks(boss.x + (Math.random() - 0.5) * 60, boss.y + (Math.random() - 0.5) * 60, C.red, 16, 5);
+      spawnFloatingText(boss.x + (Math.random() - 0.5) * 80, boss.y - boss.radius - 18, `-${actualDamage} HP`, isCrit ? C.gold : C.red, isCrit);
+
+      if (boss.currentHp <= 0) {
+        defeatBoss();
+      }
+    }
+
+    function defeatBoss() {
+      if (!boss.isActive) return;
+      boss.isActive = false;
+      boss.nextSpawnTimer = BOSS_CONFIG.cycleIntervalSec;
+
+      SoundEngine.playBossCollapse();
+      triggerShake(22);
+
+      for (let i = 0; i < 48; i++) {
+        const angle = (i / 48) * Math.PI * 2;
+        const spd = 6 + Math.random() * 6;
+        particles.push({
+          x: boss.x, y: boss.y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          color: C.gold,
+          alpha: 1.0,
+          decay: 0.025,
+          radius: 3.5
+        });
+      }
+
+      const totalDmg = boss.totalDamage || 1;
+      const results = [];
+
+      for (const [teamName, dmg] of Object.entries(boss.damageLedger)) {
+        const ratio = dmg / totalDmg;
+        const reward = Math.round(ratio * boss.rewardPool);
+        const pct = Math.round(ratio * 100);
+
+        const p = participants.find(item => item.country.name.toLowerCase() === teamName.toLowerCase());
+        if (p && p.isAlive) {
+          p.points += reward;
+          spawnFloatingText(p.x, p.y - p.radius - 20, `+${reward.toLocaleString()} PTS (${pct}%)`, C.gold, true);
+        }
+        results.push({ team: teamName, reward, pct });
+      }
+
+      results.sort((a, b) => b.reward - a.reward);
+      const topWinner = results[0];
+
+      showToast("🏆 TITAN DEFEATED! 50,000 PTS REWARDS DISTRIBUTED", "👑");
+      if (topWinner) {
+        addChatStreamItem("RAID", `🏆 Titan down! Top: ${topWinner.team} won ${topWinner.reward.toLocaleString()} PTS (${topWinner.pct}%)!`);
+      }
+
+      updateLeaderboardUI();
+      updatePhaseHeader();
+    }
+
+    function escapeBoss() {
+      if (!boss.isActive) return;
+      boss.isActive = false;
+      boss.nextSpawnTimer = BOSS_CONFIG.cycleIntervalSec;
+      SoundEngine.playNukeSurge();
+      showToast("⚠️ TITAN ESCAPED! RAID WINDOW EXPIRED", "⚡");
+      addChatStreamItem("RAID", "⚠️ Titan escaped into hyperspace. 0 PTS awarded.");
+      updatePhaseHeader();
+    }
+
+    function updatePhaseHeader() {
+      const gapContainer = document.getElementById('gap-alert-container');
+
+      if (boss.isActive) {
+        if (gapContainer) {
+          const hpPct = Math.round((boss.currentHp / boss.maxHp) * 100);
+          gapContainer.innerHTML = `
+            <span class="gap-pill urgent">⚔️ RAID HP ${hpPct}% · 50K POOL</span>
+          `;
+        }
+      } else {
+        if (gapContainer) gapContainer.innerHTML = '<span id="gap-alert-badge" class="gap-pill">LIVE BATTLE</span>';
+      }
+    }
+
+    function initGauntlet() {
+      sessionStartTime = Date.now();
+      participants = [];
+      particles = [];
+      floatingTexts = [];
+      attackLasers = [];
+
+      const spawnSlots = [
+        { x: 540, y: 480, pts: 48500 }, // Rank 1 (Taiwan)
+        { x: 320, y: 780, pts: 42200 }, // Rank 2 (Japan)
+        { x: 760, y: 780, pts: 37800 }, // Rank 3 (USA)
+        { x: 260, y: 1150, pts: 30500 },
+        { x: 820, y: 1150, pts: 27400 },
+        { x: 420, y: 1450, pts: 23000 },
+        { x: 660, y: 1450, pts: 19500 },
+        { x: 540, y: 1720, pts: 16200 }
+      ];
+
+      STARTER_COUNTRIES.forEach((code, idx) => {
+        const c = ALL_COUNTRIES.find(item => item.code === code);
+        if (c) {
+          const slot = spawnSlots[idx] || { x: 540, y: 1000, pts: 15000 };
+          deployCountry(c, slot.x, slot.y, slot.pts);
+        }
+      });
+
+      showToast("BRAWL ARENA ONLINE", "⚔️");
+      SoundEngine.playNukeSurge();
+      updateLeaderboardUI();
+    }
+
+    function updateSquadCountUI() {
+      const el = document.getElementById('active-squad-count');
+      if (el) el.innerText = participants.filter(p => p.isAlive).length;
+    }
+
+    // 4. Real-time Leaderboard & Dynamic Diameters
+    function updateLeaderboardUI() {
+      const ranked = [...participants]
+        .filter(p => p.isAlive)
+        .sort((a, b) => b.points - a.points);
+
+      ranked.forEach((p, idx) => {
+        p.globalRank = idx + 1;
+
+        // Dynamic diameter calculation
+        if (idx === 0) {
+          p.targetRadius = 82; // Rank 1: 164px diameter (Gold Crown)
+        } else if (idx === 1) {
+          p.targetRadius = 68; // Rank 2: 136px diameter (Silver Cruiser)
+        } else if (idx === 2) {
+          p.targetRadius = 57; // Rank 3: 114px diameter (Bronze Battleship)
+        } else {
+          // Rank 4+: 88px ~ 100px (44 ~ 50px radius)
+          const bonus = Math.min(6, (p.points / 40000) * 6);
+          p.targetRadius = 44 + bonus;
+        }
+
+        // Supernova boost diameter expansion
+        if (p.shieldUntil > Date.now() + 4000 && p.boostFlashTimer > 0) {
+          p.targetRadius = Math.max(p.targetRadius, 96);
+        }
+      });
+
+      const top5 = ranked.slice(0, 5);
+      const podium = document.getElementById('leader-podium');
+      if (podium) {
+        let html = '';
+        top5.forEach((p, idx) => {
+          const rank = idx + 1;
+          const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+          const formattedPts = p.points.toLocaleString();
+
+          html += `
+            <div class="leader-pill ${rankClass}">
+              <div class="pill-left">
+                <span class="pill-rank">#${rank}</span>
+                <img class="pill-flag" src="https://flagcdn.com/w80/${p.country.code}.png" alt="${p.country.name}">
+                <span class="pill-name">${p.country.name}</span>
+              </div>
+              <span class="pill-points">${formattedPts}</span>
+            </div>
+          `;
+        });
+        podium.innerHTML = html;
+      }
+
+      // Champion display update
+      const champion = ranked[0];
+      const throneBadge = document.getElementById('throne-occupant-badge');
+      if (throneBadge && champion) {
+        throneBadge.innerHTML = `
+          <img style="width: 14px; height: 14px; border-radius: 50%; object-fit: cover;" src="https://flagcdn.com/w80/${champion.country.code}.png">
+          <span>${champion.country.name} · ${champion.points.toLocaleString()} PTS</span>
+        `;
+      }
+
+      // Score gap alert
+      if (ranked.length >= 2) {
+        const gap = ranked[0].points - ranked[1].points;
+        const gapBadge = document.getElementById('gap-alert-badge');
+        if (gapBadge) {
+          if (gap < 3000) {
+            gapBadge.className = 'gap-pill urgent';
+            gapBadge.innerText = `GAP Δ${gap.toLocaleString()} PTS`;
+          } else {
+            gapBadge.className = 'gap-pill';
+            gapBadge.innerText = `GAP Δ${gap.toLocaleString()} PTS`;
+          }
+        }
+      }
+    }
+
+    // 5. 2D Orbital Physics & Elastic Collisions
+    function updatePhysics() {
+      const now = Date.now();
+      const dt = 1 / 60;
+      const uptimeSec = Math.floor((now - sessionStartTime) / 1000);
+
+      // Screen shake damping
+      if (screenShake.intensity > 0) {
+        screenShake.x = (Math.random() - 0.5) * screenShake.intensity;
+        screenShake.y = (Math.random() - 0.5) * screenShake.intensity;
+        screenShake.intensity *= 0.88;
+        if (screenShake.intensity < 0.2) screenShake.intensity = 0;
+      } else {
+        screenShake.x = 0;
+        screenShake.y = 0;
+      }
+
+      const aliveList = participants.filter(p => p.isAlive);
+
+      // 1. Contender movement & targeting
+      aliveList.forEach(p => {
+        // Radius breathing transition (Lerp)
+        p.radius += (p.targetRadius - p.radius) * 0.08;
+
+        // Impact squash & stretch recovery
+        p.squashX += (1.0 - p.squashX) * 0.16;
+        p.squashY += (1.0 - p.squashY) * 0.16;
+        p.scaleImpulse *= 0.88;
+        if (p.scaleImpulse < 0.005) p.scaleImpulse = 0;
+
+        // Locked target dash strike
+        if (p.isDashing && p.dashTarget && p.dashTarget.isAlive) {
+          const dx = p.dashTarget.x - p.x;
+          const dy = p.dashTarget.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 10) {
+            const dashSpeed = 12.0;
+            p.vx = (dx / dist) * dashSpeed;
+            p.vy = (dy / dist) * dashSpeed;
+          }
+
+          p.dashTimer -= dt;
+          if (p.dashTimer <= 0) {
+            p.isDashing = false;
+            p.dashTarget = null;
+          }
+
+          // Dash thruster particle cone
+          particles.push({
+            x: p.x - (p.vx * 1.6) + (Math.random() - 0.5) * 8,
+            y: p.y - (p.vy * 1.6) + (Math.random() - 0.5) * 8,
+            vx: -p.vx * 0.35 + (Math.random() - 0.5) * 2,
+            vy: -p.vy * 0.35 + (Math.random() - 0.5) * 2,
+            color: p.globalRank === 1 ? C.gold : C.cyan,
+            alpha: 0.9,
+            decay: 0.05,
+            radius: Math.random() * 3 + 2
+          });
+        } else {
+          // Free tactical cruise
+          const currentSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          const maxCruise = 2.4;
+          if (currentSpeed > maxCruise) {
+            p.vx *= 0.95;
+            p.vy *= 0.95;
+          } else if (currentSpeed < 0.6) {
+            p.vx += (Math.random() - 0.5) * 0.4;
+            p.vy += (Math.random() - 0.5) * 0.4;
+          }
+        }
+
+        // Position integration
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Perimeter bounce
+        const curR = p.radius;
+        if (p.x - curR < ARENA_BOUNDS.minX) {
+          p.x = ARENA_BOUNDS.minX + curR;
+          p.vx = Math.abs(p.vx) * 0.85;
+          p.squashX = 0.88; p.squashY = 1.12;
+          SoundEngine.playBounce();
+        } else if (p.x + curR > ARENA_BOUNDS.maxX) {
+          p.x = ARENA_BOUNDS.maxX - curR;
+          p.vx = -Math.abs(p.vx) * 0.85;
+          p.squashX = 0.88; p.squashY = 1.12;
+          SoundEngine.playBounce();
+        }
+
+        if (p.y - curR < ARENA_BOUNDS.minY) {
+          p.y = ARENA_BOUNDS.minY + curR;
+          p.vy = Math.abs(p.vy) * 0.85;
+          p.squashX = 1.12; p.squashY = 0.88;
+          SoundEngine.playBounce();
+        } else if (p.y + curR > ARENA_BOUNDS.maxY) {
+          p.y = ARENA_BOUNDS.maxY - curR;
+          p.vy = -Math.abs(p.vy) * 0.85;
+          p.squashX = 1.12; p.squashY = 0.88;
+          SoundEngine.playBounce();
+        }
+
+        if (p.hitFlashTimer > 0) p.hitFlashTimer--;
+        if (p.boostFlashTimer > 0) p.boostFlashTimer--;
+      });
+
+      // 2. Contender-to-Contender Elastic Collisions
+      for (let i = 0; i < aliveList.length; i++) {
+        for (let j = i + 1; j < aliveList.length; j++) {
+          const p1 = aliveList[i];
+          const p2 = aliveList[j];
+
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = p1.radius + p2.radius + 6;
+
+          if (dist < minDist && dist > 0.001) {
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const overlap = minDist - dist;
+            p1.x -= nx * overlap * 0.5;
+            p1.y -= ny * overlap * 0.5;
+            p2.x += nx * overlap * 0.5;
+            p2.y += ny * overlap * 0.5;
+
+            const kx = p1.vx - p2.vx;
+            const ky = p1.vy - p2.vy;
+            const p = 2 * (nx * kx + ny * ky) / 2;
+
+            p1.vx -= p * nx * 0.88;
+            p1.vy -= p * ny * 0.88;
+            p2.vx += p * nx * 0.88;
+            p2.vy += p * ny * 0.88;
+
+            p1.squashX = 0.86; p1.squashY = 1.14;
+            p2.squashX = 1.14; p2.squashY = 0.86;
+
+            if (p1.isDashing && p1.dashTarget === p2) {
+              resolveBrawlAttack(p1, p2);
+              p1.isDashing = false;
+              p1.dashTarget = null;
+            } else if (p2.isDashing && p2.dashTarget === p1) {
+              resolveBrawlAttack(p2, p1);
+              p2.isDashing = false;
+              p2.dashTarget = null;
+            } else {
+              SoundEngine.playBounce();
+              spawnSparks((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 'rgba(255, 255, 255, 0.5)', 8, 3);
+            }
+          }
+        }
+      }
+
+      // 3. Contender vs World Boss Collision & Hit Registration
+      if (boss.isActive) {
+        boss.timeRemaining -= dt;
+        boss.shockwaveCooldown -= dt;
+        if (boss.hitFlashTimer > 0) boss.hitFlashTimer--;
+
+        // Boss counter shockwave pulse
+        if (boss.shockwaveCooldown <= 0) {
+          boss.shockwaveCooldown = 14.0;
+          SoundEngine.playBounce();
+          triggerShake(8);
+
+          // Shockwave ripple ring particles
+          for (let i = 0; i < 36; i++) {
+            const angle = (i / 36) * Math.PI * 2;
+            particles.push({
+              x: boss.x, y: boss.y,
+              vx: Math.cos(angle) * 8.5,
+              vy: Math.sin(angle) * 8.5,
+              color: C.red,
+              alpha: 0.85,
+              decay: 0.035,
+              radius: 2.5
+            });
+          }
+
+          // Gentle outward push to unshielded contenders
+          aliveList.forEach(p => {
+            if (p.shieldUntil <= now) {
+              const dx = p.x - boss.x;
+              const dy = p.y - boss.y;
+              const dist = Math.max(10, Math.sqrt(dx * dx + dy * dy));
+              p.vx += (dx / dist) * 7.5;
+              p.vy += (dy / dist) * 7.5;
+            }
+          });
+        }
+
+        // Check if boss escaped
+        if (boss.timeRemaining <= 0) {
+          escapeBoss();
+        }
+
+        // Boss drifting movement
+        boss.x += boss.vx;
+        boss.y += boss.vy;
+
+        // Arena bounding for Boss
+        const bMarginX = 60;
+        const bMarginY = 120;
+        if (boss.x - boss.radius < ARENA_BOUNDS.minX + bMarginX) {
+          boss.x = ARENA_BOUNDS.minX + bMarginX + boss.radius;
+          boss.vx = Math.abs(boss.vx);
+        } else if (boss.x + boss.radius > ARENA_BOUNDS.maxX - bMarginX) {
+          boss.x = ARENA_BOUNDS.maxX - bMarginX - boss.radius;
+          boss.vx = -Math.abs(boss.vx);
+        }
+        if (boss.y - boss.radius < ARENA_BOUNDS.minY + bMarginY) {
+          boss.y = ARENA_BOUNDS.minY + bMarginY + boss.radius;
+          boss.vy = Math.abs(boss.vy);
+        } else if (boss.y + boss.radius > ARENA_BOUNDS.maxY - bMarginY) {
+          boss.y = ARENA_BOUNDS.maxY - bMarginY - boss.radius;
+          boss.vy = -Math.abs(boss.vy);
+        }
+
+        // Contender-Boss physical collisions
+        aliveList.forEach(p => {
+          const dx = p.x - boss.x;
+          const dy = p.y - boss.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = p.radius + boss.radius;
+
+          if (dist < minDist && dist > 0.001) {
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const overlap = minDist - dist;
+
+            p.x += nx * overlap;
+            p.y += ny * overlap;
+
+            p.vx = nx * 8.0;
+            p.vy = ny * 8.0;
+            p.squashX = 0.82;
+            p.squashY = 1.18;
+
+            attackBoss(p.country.name, 500);
+          }
+        });
+      } else {
+        boss.nextSpawnTimer -= dt;
+        if (boss.nextSpawnTimer <= 0) {
+          spawnBoss();
+        }
+      }
+
+      // Leaderboard & Phase Header refresh
+      if (Math.floor(uptimeSec * 60) % 15 === 0) {
+        updateLeaderboardUI();
+        updatePhaseHeader();
+      }
+
+      // Particle physics update
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.alpha -= pt.decay;
+        if (pt.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // Floating texts update
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.022;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      // Targeting laser decay
+      for (let i = attackLasers.length - 1; i >= 0; i--) {
+        attackLasers[i].alpha -= 0.04;
+        if (attackLasers[i].alpha <= 0) attackLasers.splice(i, 1);
+      }
+    }
+
+    // Brawl attack resolution
+    function resolveBrawlAttack(attacker, victim) {
+      const now = Date.now();
+      const midX = (attacker.x + victim.x) / 2;
+      const midY = (attacker.y + victim.y) / 2;
+
+      if (victim.shieldUntil > now) {
+        SoundEngine.playShieldChord();
+        showToast(`${victim.country.name} DEFLECTED ATTACK!`, "🛡️");
+        spawnSparks(midX, midY, C.green, 24, 7);
+        attacker.vx = -attacker.vx * 1.5;
+        attacker.vy = -attacker.vy * 1.5;
+        return;
+      }
+
+      const stolenPts = Math.min(victim.points, 500);
+      victim.points -= stolenPts;
+      attacker.points += stolenPts;
+
+      victim.hitFlashTimer = 25;
+      victim.revengeArmorUntil = now + 4000;
+
+      SoundEngine.playImpact();
+      triggerShake(14);
+
+      spawnFloatingText(victim.x, victim.y - victim.radius - 12, `-${stolenPts} PTS`, C.red, true);
+      spawnFloatingText(attacker.x, attacker.y - attacker.radius - 12, `+${stolenPts} STEAL`, C.gold, true);
+
+      spawnSparks(midX, midY, C.orange, 26, 8);
+      showToast(`${attacker.country.name} STOLE 500 PTS FROM ${victim.country.name}`, "⚔️");
+      addChatStreamItem(attacker.country.name, `⚡ Dashed into ${victim.country.name}!`);
+
+      updateLeaderboardUI();
+    }
+
+    // 6. Canvas 2D Rendering: Tactical Radar & Arena Discs
+    function draw() {
+      updatePhysics();
+
+      ctx.clearRect(0, 0, 1080, 1920);
+
+      ctx.save();
+      ctx.translate(screenShake.x, screenShake.y);
+
+      // Pure OLED black background
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(-20, -20, 1120, 1960);
+
+      // Deep space floating star dust
+      starDust.forEach(star => {
+        star.y += star.vy;
+        if (star.y > 1920) star.y = 0;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fill();
+      });
+
+      // Tactical Orbital Radar Perimeter
+      ctx.save();
+      const bMinX = ARENA_BOUNDS.minX - 18;
+      const bMaxX = ARENA_BOUNDS.maxX + 18;
+      const bMinY = ARENA_BOUNDS.minY - 18;
+      const bMaxY = ARENA_BOUNDS.maxY + 18;
+      const bW = bMaxX - bMinX;
+      const bH = bMaxY - bMinY;
+
+      // 1. Arena boundary perimeter box
+      ctx.beginPath();
+      ctx.roundRect(bMinX, bMinY, bW, bH, 28);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Corner alignment brackets
+      const cLen = 18;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bMinX, bMinY + cLen); ctx.lineTo(bMinX, bMinY); ctx.lineTo(bMinX + cLen, bMinY);
+      ctx.moveTo(bMaxX - cLen, bMinY); ctx.lineTo(bMaxX, bMinY); ctx.lineTo(bMaxX, bMinY + cLen);
+      ctx.moveTo(bMinX, bMaxY - cLen); ctx.lineTo(bMinX, bMaxY); ctx.lineTo(bMinX + cLen, bMaxY);
+      ctx.moveTo(bMaxX - cLen, bMaxY); ctx.lineTo(bMaxX, bMaxY); ctx.lineTo(bMaxX, bMaxY - cLen);
+      ctx.stroke();
+
+      // 2. Concentric tactical radar rings
+      const centerX = 540;
+      const centerY = 1000;
+      [260, 480, 720].forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = '700 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`SECTOR R-0${idx + 1} · TACTICAL GRID`, centerX - r + 16, centerY - 6);
+      });
+
+      // Arena center crosshairs
+      ctx.beginPath();
+      ctx.setLineDash([4, 14]);
+      ctx.moveTo(centerX, ARENA_BOUNDS.minY);
+      ctx.lineTo(centerX, ARENA_BOUNDS.maxY);
+      ctx.moveTo(ARENA_BOUNDS.minX, centerY);
+      ctx.lineTo(ARENA_BOUNDS.maxX, centerY);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // High-tech target lock & laser beam
+      attackLasers.forEach(laser => {
+        ctx.save();
+        // 1. Outer energy glow
+        ctx.beginPath();
+        ctx.moveTo(laser.x1, laser.y1);
+        ctx.lineTo(laser.x2, laser.y2);
+        ctx.strokeStyle = `rgba(255, 69, 58, ${laser.alpha * 0.35})`;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        // 2. Pulse laser beam
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]);
+        ctx.lineDashOffset = (Date.now() / 25) % 16;
+        ctx.moveTo(laser.x1, laser.y1);
+        ctx.lineTo(laser.x2, laser.y2);
+        ctx.strokeStyle = `rgba(255, 214, 10, ${laser.alpha * 0.95})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = C.gold;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Target lock reticle
+        const reticleR = 42;
+        const rx = laser.x2;
+        const ry = laser.y2;
+
+        ctx.beginPath();
+        ctx.arc(rx, ry, reticleR + (1 - laser.alpha) * 18, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 69, 58, ${laser.alpha * 0.85})`;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Reticle brackets
+        const rLen = 10;
+        ctx.strokeStyle = `rgba(255, 69, 58, ${laser.alpha})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(rx - reticleR, ry - reticleR + rLen); ctx.lineTo(rx - reticleR, ry - reticleR); ctx.lineTo(rx - reticleR + rLen, ry - reticleR);
+        ctx.moveTo(rx + reticleR - rLen, ry - reticleR); ctx.lineTo(rx + reticleR, ry - reticleR); ctx.lineTo(rx + reticleR, ry - reticleR + rLen);
+        ctx.moveTo(rx - reticleR, ry + reticleR - rLen); ctx.lineTo(rx - reticleR, ry + reticleR); ctx.lineTo(rx - reticleR + rLen, ry + reticleR);
+        ctx.moveTo(rx + reticleR - rLen, ry + reticleR); ctx.lineTo(rx + reticleR, ry + reticleR); ctx.lineTo(rx + reticleR, ry + reticleR - rLen);
+        ctx.stroke();
+
+        ctx.font = '800 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+        ctx.fillStyle = `rgba(255, 69, 58, ${laser.alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText("TARGET LOCK", rx, ry - reticleR - 8);
+
+        ctx.restore();
+      });
+
+      // Particle stream rendering
+      particles.forEach(pt => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.alpha;
+        ctx.shadowColor = pt.color;
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // ==========================================
+      // World Boss Entity: TITAN R-01 (Apple Tactical Entity)
+      // ==========================================
+      if (boss.isActive) {
+        ctx.save();
+        ctx.translate(boss.x, boss.y);
+        ctx.scale(boss.squashX, boss.squashY);
+
+        const br = boss.radius;
+        const hpPct = Math.max(0, boss.currentHp / boss.maxHp);
+
+        // 1. External Threat Ring & Aura (Pulsing Apple Red)
+        const pulse = Math.sin(Date.now() / 160) * 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, br + 8 + pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = C.red;
+        ctx.shadowBlur = 24;
+        ctx.stroke();
+
+        // 2. Tactical Corner Reticles (4-axis brackets)
+        const bLen = 22;
+        const bOff = br + 14;
+        ctx.strokeStyle = 'rgba(255, 69, 58, 0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-bOff, -bOff + bLen); ctx.lineTo(-bOff, -bOff); ctx.lineTo(-bOff + bLen, -bOff);
+        ctx.moveTo(bOff - bLen, -bOff); ctx.lineTo(bOff, -bOff); ctx.lineTo(bOff, -bOff + bLen);
+        ctx.moveTo(-bOff, bOff - bLen); ctx.lineTo(-bOff, bOff); ctx.lineTo(-bOff + bLen, bOff);
+        ctx.moveTo(bOff - bLen, bOff); ctx.lineTo(bOff, bOff); ctx.lineTo(bOff, bOff - bLen);
+        ctx.stroke();
+
+        // 3. Obsidian Armor Body (Frosted Deep Dark Glass)
+        ctx.beginPath();
+        ctx.arc(0, 0, br, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, br);
+        if (boss.hitFlashTimer > 0) {
+          grad.addColorStop(0, '#FFFFFF');
+          grad.addColorStop(0.4, '#FF453A');
+          grad.addColorStop(1, '#1C1C1E');
+        } else {
+          grad.addColorStop(0, '#2C2C2E');
+          grad.addColorStop(0.6, '#1C1C1E');
+          grad.addColorStop(1, '#0C0C0E');
+        }
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Metallic Rim
+        ctx.strokeStyle = 'rgba(255, 69, 58, 0.65)';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        // 4. Concentric Reactor Rings & Glyphs
+        [0.35, 0.65].forEach((ratio) => {
+          ctx.beginPath();
+          ctx.arc(0, 0, br * ratio, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(255, 69, 58, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        });
+
+        // Center Reactor Core (Pulsing Crimson)
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fillStyle = C.red;
+        ctx.shadowColor = C.red;
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        // Boss Title & Threat Level
+        ctx.font = '800 16px -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'transparent';
+        ctx.fillText(boss.name, 0, -30);
+
+        ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255, 69, 58, 0.95)';
+        ctx.fillText('ORBITAL BOSS · 50K POOL', 0, 34);
+
+        // 5. Floating Frosted HP Bar (Anchored above the Boss)
+        const barW = 200;
+        const barH = 20;
+        const barY = -br - 32;
+
+        ctx.beginPath();
+        ctx.roundRect(-barW / 2, barY, barW, barH, 999);
+        ctx.fillStyle = 'rgba(16, 16, 20, 0.92)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+
+        const fillW = Math.max(0, (barW - 4) * hpPct);
+        if (fillW > 0) {
+          ctx.beginPath();
+          ctx.roundRect(-barW / 2 + 2, barY + 2, fillW, barH - 4, 999);
+          ctx.fillStyle = C.red;
+          ctx.fill();
+        }
+
+        ctx.font = '800 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`HP: ${boss.currentHp.toLocaleString()} / ${boss.maxHp.toLocaleString()} (${Math.round(hpPct * 100)}%)`, 0, barY + barH / 2);
+
+        // 6. Top Contributors DPS Mini-Capsule (Anchored below the Boss)
+        const sortedContributors = Object.entries(boss.damageLedger)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3);
+
+        if (sortedContributors.length > 0) {
+          const subY = br + 22;
+          const subW = 240;
+          const subH = 22;
+
+          ctx.beginPath();
+          ctx.roundRect(-subW / 2, subY, subW, subH, 999);
+          ctx.fillStyle = 'rgba(16, 16, 20, 0.88)';
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+          ctx.lineWidth = 1;
+          ctx.fill();
+          ctx.stroke();
+
+          const totalD = boss.totalDamage || 1;
+          const summaryStr = sortedContributors
+            .map((c, i) => `${i + 1}. ${c[0]} ${Math.round((c[1] / totalD) * 100)}%`)
+            .join(' · ');
+
+          ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(summaryStr, 0, subY + subH / 2);
+        }
+
+        ctx.restore();
+      }
+
+      // Battle Discs Rendering
+      const now = Date.now();
+      participants.forEach(p => {
+        if (!p.isAlive) return;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.scale(p.squashX, p.squashY);
+
+        const r = p.radius;
+        const isRank1 = p.globalRank === 1;
+        const isRank2 = p.globalRank === 2;
+        const isRank3 = p.globalRank === 3;
+        const isShielded = p.shieldUntil > now;
+
+        // 1. Glow Aura
+        if (isRank1) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+          ctx.strokeStyle = C.gold;
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = C.gold;
+          ctx.shadowBlur = 20;
+          ctx.stroke();
+        } else if (isRank2) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = C.silver;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = C.silver;
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+        } else if (isRank3) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r + 3.5, 0, Math.PI * 2);
+          ctx.strokeStyle = C.bronze;
+          ctx.lineWidth = 1.8;
+          ctx.shadowColor = C.bronze;
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+        } else if (isShielded) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = C.green;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = C.green;
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+        }
+
+        // 2. Circular High-Res Flag (Pure Vibrant Color)
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.clip();
+
+        const img = flagImages[p.country.code];
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, -r * 1.05, -r * 1.05, r * 2.1, r * 2.1);
+        } else {
+          ctx.fillStyle = C.blue;
+          ctx.fillRect(-r, -r, r * 2, r * 2);
+        }
+        ctx.restore();
+
+        // 3. Frosted Data Capsule (Lower 40% Frosted Glass)
+        const pillH = Math.round(r * 0.72);
+        const pillY = r - pillH;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Dark frosted background & hairline divider
+        ctx.fillStyle = 'rgba(16, 16, 20, 0.88)';
+        ctx.fillRect(-r, pillY, r * 2, pillH + 2);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-r, pillY);
+        ctx.lineTo(r, pillY);
+        ctx.stroke();
+
+        // Country name (SF Pro Display Bold)
+        ctx.font = `800 ${isRank1 ? '13px' : (isRank2 ? '12px' : '10px')} -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif`;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.country.name, 0, pillY + pillH * 0.36);
+
+        // Real-time points (Tabular Figures)
+        ctx.font = `800 ${isRank1 ? '13px' : (isRank2 ? '11px' : '10px')} -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif`;
+        ctx.fillStyle = isRank1 ? C.gold : (isRank2 ? C.silver : (isRank3 ? C.bronze : 'rgba(255, 255, 255, 0.92)'));
+        ctx.fillText(`${p.points.toLocaleString()} PTS`, 0, pillY + pillH * 0.76);
+        ctx.restore();
+
+        // 4. Apple Metallic Bevel Rim
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        if (isRank1) {
+          ctx.strokeStyle = 'rgba(255, 214, 10, 0.95)';
+          ctx.lineWidth = 3.5;
+        } else if (isRank2) {
+          ctx.strokeStyle = 'rgba(229, 229, 234, 0.90)';
+          ctx.lineWidth = 2.8;
+        } else if (isRank3) {
+          ctx.strokeStyle = 'rgba(224, 169, 109, 0.90)';
+          ctx.lineWidth = 2.4;
+        } else {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+          ctx.lineWidth = 1.6;
+        }
+        ctx.stroke();
+
+        // 5. Top Floating Rank Badge
+        if (isRank1 || isRank2 || isRank3) {
+          ctx.save();
+          const badgeY = -r - 12;
+          const badgeW = 38;
+          const badgeH = 18;
+
+          ctx.beginPath();
+          ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, 999);
+          if (isRank1) {
+            ctx.fillStyle = 'rgba(255, 214, 10, 0.25)';
+            ctx.strokeStyle = C.gold;
+          } else if (isRank2) {
+            ctx.fillStyle = 'rgba(229, 229, 234, 0.20)';
+            ctx.strokeStyle = C.silver;
+          } else {
+            ctx.fillStyle = 'rgba(224, 169, 109, 0.20)';
+            ctx.strokeStyle = C.bronze;
+          }
+          ctx.lineWidth = 1.2;
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = '800 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isRank1 ? C.gold : (isRank2 ? C.silver : C.bronze);
+          const badgeText = isRank1 ? "👑 #1" : (isRank2 ? "🥈 #2" : "🥉 #3");
+          ctx.fillText(badgeText, 0, badgeY + badgeH / 2);
+          ctx.restore();
+        }
+
+        ctx.restore();
+      });
+
+      // Floating micro-interaction numbers
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.font = `800 ${ft.isBig ? '16px' : '12px'} -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`;
+        ctx.fillStyle = ft.color;
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.shadowColor = ft.color;
+        ctx.shadowBlur = 8;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+
+      ctx.restore();
+
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+
+    // Dynamic Island Toast
+    let toastTimer = null;
+    function showToast(msg, icon = "⚡") {
+      const toast = document.getElementById('dynamic-toast');
+      const iconEl = document.getElementById('toast-icon');
+      const msgEl = document.getElementById('toast-message');
+      if (!toast || !iconEl || !msgEl) return;
+
+      iconEl.innerText = icon;
+      msgEl.innerText = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // 7. Interactive Brawl Actions & API
+    window.gameActions = {
+      assistCountry: function(countryName, author, customMsg) {
+        let p = participants.find(item => item.isAlive && (
+          item.country.name.toLowerCase() === countryName.toLowerCase() ||
+          item.country.code === countryName.toLowerCase()
+        ));
+
+        if (!p) {
+          const matchCountry = ALL_COUNTRIES.find(c => 
+            c.name.toLowerCase() === countryName.toLowerCase() ||
+            c.code === countryName.toLowerCase()
+          );
+          if (matchCountry) {
+            p = deployCountry(matchCountry);
+            addChatStreamItem(author || 'FAN', customMsg || `#${p.country.name} joined the arena`);
+            return;
+          }
+        }
+
+        if (p) {
+          p.fanCount++;
+          p.points += 10;
+          p.boostFlashTimer = 18;
+
+          const boostAngle = Math.random() * Math.PI * 2;
+          p.vx += Math.cos(boostAngle) * 2.5;
+          p.vy += Math.sin(boostAngle) * 2.5;
+          p.squashX = 1.08; p.squashY = 0.92;
+
+          SoundEngine.playCheer();
+          spawnFloatingText(p.x, p.y - p.radius - 12, '+10 PTS', C.cyan);
+          addChatStreamItem(author || 'FAN', customMsg || `#${p.country.name} boost!`);
+          updateLeaderboardUI();
+        }
+      },
+
+      stompCountry: function(attackerName, victimName, author) {
+        const attacker = participants.find(item => item.isAlive && (
+          item.country.name.toLowerCase() === attackerName.toLowerCase() ||
+          item.country.code === attackerName.toLowerCase()
+        ));
+
+        const victim = participants.find(item => item.isAlive && (
+          item.country.name.toLowerCase() === victimName.toLowerCase() ||
+          item.country.code === victimName.toLowerCase()
+        ));
+
+        if (attacker && victim && attacker !== victim) {
+          const now = Date.now();
+          if (now - attacker.lastAttackTime < 2800) return;
+          attacker.lastAttackTime = now;
+
+          attacker.isDashing = true;
+          attacker.dashTarget = victim;
+          attacker.dashTimer = 2.2;
+
+          SoundEngine.playDash();
+
+          attackLasers.push({
+            x1: attacker.x, y1: attacker.y,
+            x2: victim.x, y2: victim.y,
+            alpha: 1.0
+          });
+
+          showToast(`${attacker.country.name} LOCKED ON ${victim.country.name}`, "⚡");
+          addChatStreamItem(author || 'COMMANDER', `⚡ ${attacker.country.name} locked on ${victim.country.name}`);
+        }
+      },
+
+      shieldCountry: function(countryName, author) {
+        let p = participants.find(item => item.isAlive && (
+          item.country.name.toLowerCase() === countryName.toLowerCase() ||
+          item.country.code === countryName.toLowerCase()
+        ));
+
+        if (!p) {
+          const matchCountry = ALL_COUNTRIES.find(c => 
+            c.name.toLowerCase() === countryName.toLowerCase() ||
+            c.code === countryName.toLowerCase()
+          );
+          if (matchCountry) p = deployCountry(matchCountry);
+        }
+
+        if (p) {
+          p.shieldUntil = Date.now() + 15000;
+          SoundEngine.playShieldChord();
+          spawnSparks(p.x, p.y, C.green, 22, 6);
+          spawnFloatingText(p.x, p.y - p.radius - 14, 'SHIELD 15S', C.green, true);
+          showToast(`${author || 'VIP'}: ${p.country.name} SHIELD ACTIVE (15S)`, "🛡️");
+          addChatStreamItem(author || 'VIP', `🛡️ $2 Shield for ${p.country.name}`);
+        }
+      },
+
+      respawnCountry: function(countryName, author) {
+        let p = participants.find(item => (
+          item.country.name.toLowerCase() === countryName.toLowerCase() ||
+          item.country.code === countryName.toLowerCase()
+        ));
+
+        if (!p) {
+          const matchCountry = ALL_COUNTRIES.find(c => 
+            c.name.toLowerCase() === countryName.toLowerCase() ||
+            c.code === countryName.toLowerCase()
+          );
+          if (matchCountry) p = deployCountry(matchCountry);
+        }
+
+        if (p) {
+          p.points += 10000;
+          p.shieldUntil = Date.now() + 8000;
+          p.boostFlashTimer = 35;
+          p.squashX = 1.25; p.squashY = 1.25;
+
+          SoundEngine.playNukeSurge();
+          triggerShake(18);
+
+          spawnSparks(p.x, p.y, C.purple, 45, 10);
+          spawnFloatingText(p.x, p.y - p.radius - 18, '+10,000 NUKE', C.purple, true);
+
+          participants.forEach(other => {
+            if (other !== p && other.isAlive) {
+              const dx = other.x - p.x;
+              const dy = other.y - p.y;
+              const dist = Math.max(20, Math.sqrt(dx * dx + dy * dy));
+              other.vx += (dx / dist) * 7.0;
+              other.vy += (dy / dist) * 7.0;
+            }
+          });
+
+          showToast(`${author || 'VIP'}: ${p.country.name} SUPERNOVA BLAST!`, "🚀");
+          addChatStreamItem(author || 'VIP', `🚀 $10 Shockwave for ${p.country.name}`);
+          updateLeaderboardUI();
+        }
+      },
+
+      spawnBoss: function() {
+        spawnBoss();
+      },
+
+      attackBoss: function(countryName, damage = 500, isCrit = false) {
+        attackBoss(countryName, damage, isCrit);
+      },
+
+      killBoss: function() {
+        if (boss.isActive) {
+          boss.currentHp = 0;
+          defeatBoss();
+        }
+      }
+    };
+
+    // 8. WebSocket Real-time Connectivity & Responsive Scale
+    function initWebSocket() {
+      const ws = new WebSocket(`ws://${window.location.host}`);
+      ws.onmessage = (event) => {
+        try {
+          const { action, payload } = JSON.parse(event.data);
+          if (action === 'ASSIST_COUNTRY') window.gameActions.assistCountry(payload.team, payload.author);
+          else if (action === 'STOMP_COUNTRY') window.gameActions.stompCountry(payload.attacker, payload.victim, payload.author);
+          else if (action === 'SHIELD_COUNTRY') window.gameActions.shieldCountry(payload.team, payload.author);
+          else if (action === 'RESPAWN_COUNTRY') window.gameActions.respawnCountry(payload.team, payload.author);
+          else if (action === 'SPAWN_BOSS') window.gameActions.spawnBoss();
+          else if (action === 'ATTACK_BOSS') window.gameActions.attackBoss(payload.team, payload.damage || 500, payload.isCrit);
+          else if (action === 'KILL_BOSS') window.gameActions.killBoss();
+        } catch (e) {}
+      };
+      ws.onclose = () => setTimeout(initWebSocket, 3000);
+    }
+
+    function handleResize() {
+      const container = document.getElementById('app-container');
+      const scale = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+      if (container) container.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    initGauntlet();
+    initWebSocket();
+  </script>
+</body>
+</html>

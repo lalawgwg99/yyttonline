@@ -1,0 +1,14 @@
+{
+  "name": "live-battle-royale-marbles",
+  "version": "1.0.0",
+  "description": "24/7 Automated Interactive Battle Royale Marbles for Live Streaming",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0",
+    "youtube-chat": "^2.2.0"
+  }
+}

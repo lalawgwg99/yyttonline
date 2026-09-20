@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Ascent: Orbital Brawl - Admin Dashboard</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --card: rgba(28, 28, 30, 0.85);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f5f5f7;
+      --subtext: rgba(235, 235, 245, 0.6);
+      --accent: #0a84ff;
+      --accent-green: #30d158;
+      --accent-red: #ff453a;
+      --accent-orange: #ff9f0a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(48, 209, 88, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(48, 209, 88, 0.25);
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+
+    button.danger {
+      background: rgba(255, 69, 58, 0.18);
+      color: var(--accent-red);
+      border: 1px solid rgba(255, 69, 58, 0.3);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .log-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+      height: 140px;
+      overflow-y: auto;
+      font-family: Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: var(--subtext);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-item {
+      display: flex;
+      gap: 8px;
+    }
+
+    .log-time {
+      color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Broadcast Control</h1>
+      <div class="status-badge" id="server-status">● Online</div>
+    </div>
+
+    <!-- YouTube Live Stream Connection -->
+    <div class="card">
+      <div class="card-title">
+        <span>YouTube Live Stream</span>
+        <span style="font-size: 13px; color: var(--subtext);" id="live-target-status">Disconnected</span>
+      </div>
+      <div class="field-group">
+        <input type="text" id="live-id-input" placeholder="Enter YouTube Live ID or Channel URL (e.g. jfKfPfyJRdk)" />
+        <button onclick="setLiveId()">Bind Stream</button>
+      </div>
+      <p class="hint">
+        No API key required. Connects directly to real-time Live Chat and Super Chat. If not currently streaming, trigger test events below.
+      </p>
+    </div>
+
+    <!-- Simulated Commands & Actions -->
+    <div class="card">
+      <div class="card-title">Simulated Commands & Tactical Actions</div>
+      <div class="btn-grid">
+        <button class="secondary" onclick="simulate('ASSIST_COUNTRY', { team: 'Taiwan', author: 'Fan_TW' })">
+          🇹🇼 Chat #Taiwan (+10 PTS · Boost)
+        </button>
+        <button class="secondary" onclick="simulate('ASSIST_COUNTRY', { team: 'Japan', author: 'Fan_JP' })">
+          🇯🇵 Chat #Japan (+10 PTS · Boost)
+        </button>
+        <button style="background: rgba(255, 214, 10, 0.16); color: #FFD60A; border: 1px solid rgba(255, 214, 10, 0.35);" onclick="simulate('STOMP_COUNTRY', { attacker: 'Taiwan', victim: 'Japan', author: 'TW_Striker' })">
+          ⚡ Taiwan Strike Japan (Steal 500 PTS)
+        </button>
+        <button style="background: rgba(255, 69, 58, 0.16); color: #FF453A; border: 1px solid rgba(255, 69, 58, 0.35);" onclick="simulate('STOMP_COUNTRY', { attacker: 'Japan', victim: 'Taiwan', author: 'JP_Striker' })">
+          ⚡ Japan Strike Taiwan (Steal 500 PTS)
+        </button>
+        <button class="secondary" onclick="simulate('SHIELD_COUNTRY', { team: 'Taiwan', author: 'Defender $2' })">
+          🛡️ Super Chat $2 (Taiwan 15s Shield · Deflect)
+        </button>
+        <button class="secondary" onclick="simulate('RESPAWN_COUNTRY', { team: 'Taiwan', author: 'Whale $10' })">
+          🚀 Super Chat $10 (Taiwan Supernova +10,000 PTS)
+        </button>
+      </div>
+    </div>
+
+    <!-- World Boss Raid Controls -->
+    <div class="card">
+      <div class="card-title">
+        <span>World Boss Raid (TITAN R-01)</span>
+        <span style="font-size: 12px; color: var(--accent-red); font-weight: 700;">10-MIN CYCLE</span>
+      </div>
+      <p class="hint" style="margin-bottom: 12px;">
+        Spawns every 10 minutes automatically. All contenders attack together. Defeating the Titan distributes the 50,000 PTS reward pool proportionally based on damage contribution.
+      </p>
+      <div class="btn-grid">
+        <button style="background: rgba(255, 69, 58, 0.16); color: #FF453A; border: 1px solid rgba(255, 69, 58, 0.35);" onclick="simulate('SPAWN_BOSS', {})">
+          🚨 Spawn Titan Now
+        </button>
+        <button class="secondary" onclick="simulate('ATTACK_BOSS', { team: 'Taiwan', damage: 2500 })">
+          ⚡ Taiwan Strike Titan (-2,500 HP)
+        </button>
+        <button class="secondary" onclick="simulate('ATTACK_BOSS', { team: 'Japan', damage: 2500 })">
+          ⚡ Japan Strike Titan (-2,500 HP)
+        </button>
+        <button style="background: rgba(255, 214, 10, 0.16); color: #FFD60A; border: 1px solid rgba(255, 214, 10, 0.35);" onclick="simulate('ATTACK_BOSS', { team: 'USA', damage: 10000, isCrit: true })">
+          🚀 USA Nuke Titan (-10,000 HP)
+        </button>
+        <button style="background: rgba(48, 209, 88, 0.16); color: #30D158; border: 1px solid rgba(48, 209, 88, 0.35);" onclick="simulate('KILL_BOSS', {})">
+          💥 Defeat Titan (Trigger Payout)
+        </button>
+      </div>
+    </div>
+
+    <!-- Live System Logs -->
+    <div class="card">
+      <div class="card-title">System Event Log</div>
+      <div class="log-box" id="log-box">
+        <div class="log-item"><span class="log-time">[Init]</span><span>Control panel initialized</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function addLog(msg) {
+      const box = document.getElementById('log-box');
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      div.innerHTML = `<span class="log-time">[${time}]</span><span>${msg}</span>`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function setLiveId() {
+      const liveId = document.getElementById('live-id-input').value.trim();
+      try {
+        const res = await fetch('/api/set-live-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ liveId })
+        });
+        const data = await res.json();
+        addLog(`Live ID updated: ${liveId || 'Stopped'}`);
+        document.getElementById('live-target-status').innerText = liveId ? `Connected: ${liveId}` : 'Disconnected';
+      } catch (err) {
+        addLog(`Connection failed: ${err.message}`);
+      }
+    }
+
+    async function simulate(action, payload) {
+      try {
+        const res = await fetch('/api/simulate-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, payload })
+        });
+        addLog(`Simulated action sent: ${action}`);
+      } catch (err) {
+        addLog(`Action failed: ${err.message}`);
+      }
+    }
+
+    // Health Check
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        document.getElementById('server-status').innerText = `● Online (${data.connections} clients)`;
+      } catch (e) {
+        document.getElementById('server-status').innerText = `○ Disconnected`;
+        document.getElementById('server-status').style.color = '#ff453a';
+      }
+    }
+    setInterval(checkHealth, 5000);
+    checkHealth();
+  </script>
+</body>
+</html>
