@@ -18,6 +18,16 @@ const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 3000;
 let activeLiveId = process.env.YOUTUBE_LIVE_ID || '';
 let liveChatClient = null;
+const commandCooldowns = new Map();
+
+function allowCommand(author, command, cooldownMs) {
+  const key = `${author || 'anonymous'}:${command}`;
+  const now = Date.now();
+  const previous = commandCooldowns.get(key) || 0;
+  if (now - previous < cooldownMs) return false;
+  commandCooldowns.set(key, now);
+  return true;
+}
 
 // 靜態檔案目錄
 app.use(express.static(path.join(__dirname, 'public')));
@@ -71,6 +81,7 @@ function handleChatMessage(messageData) {
 
   // Boss Attack Command (e.g. "#Taiwan attack boss", "#Taiwan boss", "attack boss")
   if (text.includes('boss') || text.includes('titan') || text.includes('魔王')) {
+    if (!allowCommand(author, 'boss', 5000)) return;
     let team = 'Taiwan';
     const aliases = {
       'taiwan': 'Taiwan', 'tw': 'Taiwan', '台灣': 'Taiwan',
@@ -95,6 +106,7 @@ function handleChatMessage(messageData) {
 
   // 2. 宿敵踩踏機制 (Stomp Rivalry: 例如 "#Taiwan stomp #Japan" 或 "#tw 踩 #kr")
   if (text.includes('stomp') || text.includes('踩') || text.includes('壓制')) {
+    if (!allowCommand(author, 'stomp', 3000)) return;
     let attacker = 'Taiwan';
     let victim = 'Japan';
 
@@ -133,12 +145,14 @@ function handleChatMessage(messageData) {
 
   for (const [kw, cName] of Object.entries(countryAliases)) {
     if (text.includes(kw)) {
+      if (!allowCommand(author, 'assist', 10000)) return;
       broadcast('ASSIST_COUNTRY', { team: cName, author });
       break;
     }
   }
 
   if (text.includes('#護盾') || text.includes('!shield')) {
+    if (!allowCommand(author, 'shield', 10000)) return;
     broadcast('SHIELD_COUNTRY', { team: 'Taiwan', author });
   } else if (text.includes('#復活') || text.includes('!respawn') || text.includes('!rocket')) {
     broadcast('RESPAWN_COUNTRY', { team: 'Taiwan', author });

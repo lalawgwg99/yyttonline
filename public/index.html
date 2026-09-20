@@ -280,6 +280,13 @@
       font-weight: 700;
     }
 
+    .match-status {
+      color: rgba(255,255,255,.58);
+      font-size: 10px;
+      letter-spacing: .5px;
+      font-variant-numeric: tabular-nums;
+    }
+
     .throne-title {
       color: var(--sys-gold);
       letter-spacing: 0.5px;
@@ -472,6 +479,7 @@
         <div class="throne-status-left">
           <span class="throne-title">CHAMPION:</span>
           <span class="throne-occupant" id="throne-occupant-badge">TAIWAN · 66,080 PTS</span>
+          <span class="match-status" id="match-status">MATCH 01 · 30:00</span>
         </div>
         <div id="gap-alert-container">
           <span id="gap-alert-badge" class="gap-pill">GAP Δ1,450 PTS</span>
@@ -509,8 +517,8 @@
       </div>
       <span class="ticker-separator">·</span>
       <div class="ticker-item rocket">
-        <span class="ticker-tag">NUKE</span>
-        <span>$10 Shockwave <b>(+10,000 PTS)</b></span>
+        <span class="ticker-tag">SUPERNOVA</span>
+        <span>$10 Revive / Blast <b>(+10,000 PTS)</b></span>
       </div>
     </footer>
   </div>
@@ -816,6 +824,10 @@
 
     let participants = [];
     let sessionStartTime = Date.now();
+    let matchNumber = 1;
+    let matchEnding = false;
+    let lastMatchUiSecond = -1;
+    const MATCH_CONFIG = { durationSec: 1800, restartDelayMs: 8000, maxScore: 120000 };
     const STARTER_COUNTRIES = ["tw", "jp", "us", "kr", "tr", "br", "de", "gb"];
 
     // 3. Battle Disc Entity Deployment
@@ -827,7 +839,7 @@
       const py = (initialY !== null) ? initialY : (400 + Math.random() * 1100);
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.0 + Math.random() * 0.8;
-      const pts = (initialPoints !== null) ? initialPoints : 18000 + Math.floor(Math.random() * 6000);
+      const pts = (initialPoints !== null) ? initialPoints : 15000;
 
       const newParticipant = {
         country: countryObj,
@@ -886,6 +898,7 @@
       timeRemaining: BOSS_CONFIG.raidWindowSec,
       damageLedger: {},
       totalDamage: 0,
+      lastHitAt: {},
       hitFlashTimer: 0,
       shockwaveCooldown: 12.0,
       nextSpawnTimer: BOSS_CONFIG.cycleIntervalSec
@@ -899,6 +912,7 @@
       boss.timeRemaining = BOSS_CONFIG.raidWindowSec;
       boss.damageLedger = {};
       boss.totalDamage = 0;
+      boss.lastHitAt = {};
       boss.x = 540;
       boss.y = 960;
       boss.vx = (Math.random() - 0.5) * 0.7;
@@ -923,8 +937,11 @@
       ));
 
       const actualDamage = Math.min(boss.currentHp, damage);
-      boss.currentHp -= actualDamage;
       const teamKey = attacker ? attacker.country.name : attackerName;
+      const now = Date.now();
+      if (now - (boss.lastHitAt[teamKey] || 0) < 2000) return;
+      boss.lastHitAt[teamKey] = now;
+      boss.currentHp -= actualDamage;
       boss.damageLedger[teamKey] = (boss.damageLedger[teamKey] || 0) + actualDamage;
       boss.totalDamage += actualDamage;
       boss.hitFlashTimer = 18;
@@ -1028,10 +1045,20 @@
 
     function initGauntlet() {
       sessionStartTime = Date.now();
+      matchEnding = false;
+      lastMatchUiSecond = -1;
       participants = [];
       particles = [];
       floatingTexts = [];
       attackLasers = [];
+      boss.isActive = false;
+      boss.currentHp = BOSS_CONFIG.maxHp;
+      boss.rewardPool = BOSS_CONFIG.rewardPool;
+      boss.timeRemaining = BOSS_CONFIG.raidWindowSec;
+      boss.nextSpawnTimer = BOSS_CONFIG.cycleIntervalSec;
+      boss.damageLedger = {};
+      boss.totalDamage = 0;
+      boss.lastHitAt = {};
 
       const spawnSlots = [
         { x: 540, y: 480, pts: 48500 }, // Rank 1 (Taiwan)
@@ -1055,6 +1082,29 @@
       showToast("BRAWL ARENA ONLINE", "⚔️");
       SoundEngine.playNukeSurge();
       updateLeaderboardUI();
+      updateMatchUI();
+    }
+
+    function updateMatchUI() {
+      const el = document.getElementById('match-status');
+      if (!el) return;
+      const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+      const remaining = Math.max(0, MATCH_CONFIG.durationSec - elapsed);
+      const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+      const secs = String(remaining % 60).padStart(2, '0');
+      const phase = remaining <= 60 ? 'FINAL' : (elapsed < 300 ? 'GATHER' : 'BRAWL');
+      el.textContent = `MATCH ${String(matchNumber).padStart(2, '0')} · ${phase} · ${mins}:${secs}`;
+    }
+
+    function finishMatch() {
+      if (matchEnding) return;
+      matchEnding = true;
+      const winner = participants.filter(p => p.isAlive).sort((a, b) => b.points - a.points)[0];
+      if (winner) {
+        showToast(`🏆 ${winner.country.name} WINS MATCH ${String(matchNumber).padStart(2, '0')}!`, '🏆');
+        addChatStreamItem('MATCH', `🏆 ${winner.country.name} wins with ${Math.floor(winner.points).toLocaleString()} PTS`);
+      }
+      setTimeout(() => { matchNumber += 1; initGauntlet(); }, MATCH_CONFIG.restartDelayMs);
     }
 
     function updateSquadCountUI() {
@@ -1144,6 +1194,11 @@
       const now = Date.now();
       const dt = 1 / 60;
       const uptimeSec = Math.floor((now - sessionStartTime) / 1000);
+      if (!matchEnding && uptimeSec >= MATCH_CONFIG.durationSec) finishMatch();
+      if (uptimeSec !== lastMatchUiSecond) {
+        lastMatchUiSecond = uptimeSec;
+        updateMatchUI();
+      }
 
       // Screen shake damping
       if (screenShake.intensity > 0) {
@@ -1436,7 +1491,14 @@
 
       const stolenPts = Math.min(victim.points, 500);
       victim.points -= stolenPts;
-      attacker.points += stolenPts;
+      attacker.points = Math.min(MATCH_CONFIG.maxScore, attacker.points + stolenPts);
+      if (victim.points <= 0) {
+        victim.points = 0;
+        victim.isAlive = false;
+        showToast(`${victim.country.name} ELIMINATED`, '💥');
+        addChatStreamItem('ARENA', `💥 ${victim.country.name} has been eliminated`);
+        updateSquadCountUI();
+      }
 
       victim.hitFlashTimer = 25;
       victim.revengeArmorUntil = now + 4000;
@@ -1932,12 +1994,15 @@
     // 7. Interactive Brawl Actions & API
     window.gameActions = {
       assistCountry: function(countryName, author, customMsg) {
+        if (matchEnding) return;
         let p = participants.find(item => item.isAlive && (
           item.country.name.toLowerCase() === countryName.toLowerCase() ||
           item.country.code === countryName.toLowerCase()
         ));
 
         if (!p) {
+          const eliminated = participants.find(item => item.country.name.toLowerCase() === countryName.toLowerCase() || item.country.code === countryName.toLowerCase());
+          if (eliminated) return addChatStreamItem(author || 'FAN', `⛔ ${eliminated.country.name} is eliminated. Use $10 Supernova to revive.`);
           const matchCountry = ALL_COUNTRIES.find(c => 
             c.name.toLowerCase() === countryName.toLowerCase() ||
             c.code === countryName.toLowerCase()
@@ -1951,7 +2016,7 @@
 
         if (p) {
           p.fanCount++;
-          p.points += 10;
+          p.points = Math.min(MATCH_CONFIG.maxScore, p.points + 10);
           p.boostFlashTimer = 18;
 
           const boostAngle = Math.random() * Math.PI * 2;
@@ -1967,6 +2032,7 @@
       },
 
       stompCountry: function(attackerName, victimName, author) {
+        if (matchEnding) return;
         const attacker = participants.find(item => item.isAlive && (
           item.country.name.toLowerCase() === attackerName.toLowerCase() ||
           item.country.code === attackerName.toLowerCase()
@@ -2000,6 +2066,7 @@
       },
 
       shieldCountry: function(countryName, author) {
+        if (matchEnding) return;
         let p = participants.find(item => item.isAlive && (
           item.country.name.toLowerCase() === countryName.toLowerCase() ||
           item.country.code === countryName.toLowerCase()
@@ -2010,7 +2077,7 @@
             c.name.toLowerCase() === countryName.toLowerCase() ||
             c.code === countryName.toLowerCase()
           );
-          if (matchCountry) p = deployCountry(matchCountry);
+          if (matchCountry && !participants.some(item => item.country.code === matchCountry.code)) p = deployCountry(matchCountry);
         }
 
         if (p) {
@@ -2024,6 +2091,7 @@
       },
 
       respawnCountry: function(countryName, author) {
+        if (matchEnding) return;
         let p = participants.find(item => (
           item.country.name.toLowerCase() === countryName.toLowerCase() ||
           item.country.code === countryName.toLowerCase()
@@ -2038,7 +2106,13 @@
         }
 
         if (p) {
-          p.points += 10000;
+          const wasEliminated = !p.isAlive;
+          p.isAlive = true;
+          p.points = wasEliminated ? 8000 : Math.min(MATCH_CONFIG.maxScore, p.points + 10000);
+          if (wasEliminated) {
+            p.x = 540; p.y = 960; p.vx = 0; p.vy = 0;
+            p.radius = 46; p.targetRadius = 46;
+          }
           p.shieldUntil = Date.now() + 8000;
           p.boostFlashTimer = 35;
           p.squashX = 1.25; p.squashY = 1.25;
@@ -2047,7 +2121,7 @@
           triggerShake(18);
 
           spawnSparks(p.x, p.y, C.purple, 45, 10);
-          spawnFloatingText(p.x, p.y - p.radius - 18, '+10,000 NUKE', C.purple, true);
+          spawnFloatingText(p.x, p.y - p.radius - 18, wasEliminated ? 'REVIVE 8,000' : '+10,000 SUPERNOVA', C.purple, true);
 
           participants.forEach(other => {
             if (other !== p && other.isAlive) {
